@@ -16,9 +16,9 @@ export class GameScene extends Phaser.Scene {
         this.load.image('tiles', '../assets/tiles/tiles.png');
         this.load.image('tiles2', '../assets/tiles/tiles2.png');
         this.load.tilemapTiledJSON('map', '../assets/maps/map1.json');
-        // Load the atlas and animation JSON
-        this.load.atlas('knight', '../assets/atlas/knight/knight.png', '../assets/atlas/knight/knight_atlas.json'); 
-        this.load.animation('knight_anim', '../assets/atlas/knight/knight_anim.json'); 
+        // this.load.spritesheet('player', '../assets/spritesheets/character.png', { frameWidth: 16, frameHeight: 32 }); // Not needed anymore
+        this.load.atlas('player', '../assets/atlas/knight/knight.png', '../assets/atlas/knight/knight_atlas.json'); // Use this
+        this.load.animation('player_anim', '../assets/atlas/knight/knight_anim.json'); // Use this
         this.load.image('sword', '../assets/images/sword.png'); // Load the sword image
     }
 
@@ -37,11 +37,12 @@ export class GameScene extends Phaser.Scene {
         walls.setCollisionByExclusion([-1]);
 
         // Player
-        this.player = this.physics.add.sprite(100, 100, 'knight', 'knight_f_idle_anim_f0');
+        this.player = this.physics.add.sprite(100, 100, 'player', 'knight_idle_anim_0');
         this.player.setCollideWorldBounds(true);
 
         // Player animations
-        this.anims.fromJSON(this.cache.json.get('knight_anim'));
+        // This loads the animations from the JSON file, so no need to create them manually
+        this.anims.fromJSON(this.cache.json.get('player_anim'));
 
         // Sword
         this.sword = this.physics.add.sprite(this.player.x, this.player.y, 'sword');
@@ -85,7 +86,6 @@ export class GameScene extends Phaser.Scene {
             if (this.dodgeTime <= 0) {
                 this.isDodging = false;
                 this.player.body.setMaxVelocity(100); // Reset to normal speed
-                this.player.clearTint(); // Remove the tint
             }
 
             return;
@@ -97,57 +97,37 @@ export class GameScene extends Phaser.Scene {
             this.player.body.setVelocityX(-100);
             this.player.anims.play('run', true);
             this.player.flipX = true;
-            this.playerFacingRight = false; // Update facing direction
+            this.playerFacingRight = false;
         } else if (this.cursors.right.isDown) {
             this.player.body.setVelocityX(100);
             this.player.anims.play('run', true);
             this.player.flipX = false;
-            this.playerFacingRight = true; // Update facing direction
+            this.playerFacingRight = true;
         }
 
         if (this.cursors.up.isDown) {
             this.player.body.setVelocityY(-100);
             this.player.anims.play('run', true);
+            this.player.flipX = !this.playerFacingRight;
         } else if (this.cursors.down.isDown) {
             this.player.body.setVelocityY(100);
             this.player.anims.play('run', true);
-        }
-
-        if (Phaser.Input.Keyboard.JustDown(this.spaceBar)) {
-            this.handlePlayerAttack();
-        } else if (Phaser.Input.Keyboard.JustDown(this.shiftKey)) {
-            this.handlePlayerDodge(time);
+            this.player.flipX = !this.playerFacingRight;
         }
 
         if (!this.cursors.left.isDown && !this.cursors.right.isDown && !this.cursors.up.isDown && !this.cursors.down.isDown) {
             this.player.anims.play('idle', true);
         }
 
-        //this.updateSwordPosition(); // Update the sword position based on the player's facing direction
-    }
-
-        handlePlayerDodge(time) {
-            if (time > this.lastDodgeTime + this.dodgeCooldown) {
-                this.isDodging = true;
-                this.dodgeTime = this.dodgeDuration;
-                this.player.body.setMaxVelocity(this.dodgeSpeed); // Increase speed during dodge
-                this.lastDodgeTime = time;
-                this.player.setTintFill(0xffffff); // Set the player tint to white during dodge
-
-                // Dodge direction
-                if (this.cursors.left.isDown) {
-                    this.player.body.setVelocityX(-this.dodgeSpeed);
-                } else if (this.cursors.right.isDown) {
-                    this.player.body.setVelocityX(this.dodgeSpeed);
-                }
-
-                if (this.cursors.up.isDown) {
-                    this.player.body.setVelocityY(-this.dodgeSpeed);
-                } else if (this.cursors.down.isDown) {
-                    this.player.body.setVelocityY(this.dodgeSpeed);
-                }
-            }
+        if (Phaser.Input.Keyboard.JustDown(this.spaceBar)) {
+            this.handlePlayerAttack();
         }
+
+        if (Phaser.Input.Keyboard.JustDown(this.shiftKey) && time > this.lastDodgeTime + this.dodgeCooldown) {
+            this.handlePlayerDodge();
+            this.lastDodgeTime = time;
+        }
+    }
 
     handlePlayerAttack() {
         this.isAttacking = true;
@@ -195,13 +175,23 @@ export class GameScene extends Phaser.Scene {
         });
     }
 
-    updateSwordPosition() {
-        if (this.isAttacking) {
-            if (this.playerFacingRight) {
-                this.sword.setPosition(this.player.x + this.player.width / 2, this.player.y);
-            } else {
-                this.sword.setPosition(this.player.x - this.player.width / 2, this.player.y);
-            }
+    handlePlayerDodge() {
+        console.log('Player dodged!');
+        this.isDodging = true;
+        this.dodgeTime = this.dodgeDuration;
+
+        this.player.body.setMaxVelocity(this.dodgeSpeed);
+
+        if (this.cursors.left.isDown) {
+            this.player.body.setVelocityX(-this.dodgeSpeed);
+        } else if (this.cursors.right.isDown) {
+            this.player.body.setVelocityX(this.dodgeSpeed);
+        }
+
+        if (this.cursors.up.isDown) {
+            this.player.body.setVelocityY(-this.dodgeSpeed);
+        } else if (this.cursors.down.isDown) {
+            this.player.body.setVelocityY(this.dodgeSpeed);
         }
     }
 }
