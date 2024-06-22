@@ -1,0 +1,52 @@
+{
+    "anims": [
+        {
+            "key": "imp_run",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "imp",
+                    "frame": "imp_run_anim_f0"
+                },
+                {
+                    "key": "imp",
+                    "frame": "imp_run_anim_f1"
+                },
+                {
+                    "key": "imp",
+                    "frame": "imp_run_anim_f2"
+                },
+                {
+                    "key": "imp",
+                    "frame": "imp_run_anim_f3"
+                }
+            ]
+        },
+        {
+            "key": "imp_idle",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "imp",
+                    "frame": "imp_idle_anim_f0"
+                },
+                {
+                    "key": "imp",
+                    "frame": "imp_idle_anim_f1"
+                },
+                {
+                    "key": "imp",
+                    "frame": "imp_idle_anim_f2"
+                },
+                {
+                    "key": "imp",
+                    "frame": "imp_idle_anim_f3"
+                }
+            ]
+        }
+    ]
+}
