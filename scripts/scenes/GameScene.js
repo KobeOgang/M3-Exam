@@ -17,9 +17,11 @@ export class GameScene extends Phaser.Scene {
         this.load.image('tiles2', '../assets/tiles/tiles2.png');
         this.load.tilemapTiledJSON('map', '../assets/maps/map1.json');
         // Load the atlas and animation JSON
-        this.load.atlas('knight', '../assets/atlas/knight/knight.png', '../assets/atlas/knight/knight_atlas.json'); 
-        this.load.animation('knight_anim', '../assets/atlas/knight/knight_anim.json'); 
-        this.load.image('sword', '../assets/images/sword.png'); // Load the sword image
+        this.load.atlas('knight', '../assets/atlas/knight/knight.png', '../assets/atlas/knight/knight_atlas.json');
+        this.load.animation('knight_anim', '../assets/atlas/knight/knight_anim.json');
+        this.load.image('sword', '../assets/images/sword.png');
+        this.load.atlas('orc_mini', '../assets/atlas/orc_mini/orc_mini.png', '../assets/atlas/orc_mini/orc_mini_atlas.json');
+        this.load.animation('orc_mini_anim', '../assets/atlas/orc_mini/orc_mini_anim.json');
     }
 
     create() {
@@ -42,6 +44,9 @@ export class GameScene extends Phaser.Scene {
 
         // Player animations
         this.anims.fromJSON(this.cache.json.get('knight_anim'));
+
+        // Create a group for enemies
+        this.enemies = this.physics.add.group();
 
         // Sword
         this.sword = this.physics.add.sprite(this.player.x, this.player.y, 'sword');
@@ -66,6 +71,13 @@ export class GameScene extends Phaser.Scene {
 
         // Colliders
         this.physics.add.collider(this.player, walls);
+        this.physics.add.collider(this.enemies, walls);
+
+
+        // Add orc_mini enemies to the game
+        this.createEnemy('orc_mini', 200, 200);
+
+
     }
 
     update(time, delta) {
@@ -74,6 +86,11 @@ export class GameScene extends Phaser.Scene {
         } else {
             this.player.body.setVelocity(0); // Ensure player velocity is zero during attack
         }
+    
+        // Update enemies AI
+        this.enemies.children.iterate((enemy) => {
+            this.updateEnemyAI(enemy, this.player);
+        });
     }
 
     handlePlayerMovement(time, delta) {
@@ -126,28 +143,28 @@ export class GameScene extends Phaser.Scene {
         //this.updateSwordPosition(); // Update the sword position based on the player's facing direction
     }
 
-        handlePlayerDodge(time) {
-            if (time > this.lastDodgeTime + this.dodgeCooldown) {
-                this.isDodging = true;
-                this.dodgeTime = this.dodgeDuration;
-                this.player.body.setMaxVelocity(this.dodgeSpeed); // Increase speed during dodge
-                this.lastDodgeTime = time;
-                this.player.setTintFill(0xffffff); // Set the player tint to white during dodge
+    handlePlayerDodge(time) {
+        if (time > this.lastDodgeTime + this.dodgeCooldown) {
+            this.isDodging = true;
+            this.dodgeTime = this.dodgeDuration;
+            this.player.body.setMaxVelocity(this.dodgeSpeed); // Increase speed during dodge
+            this.lastDodgeTime = time;
+            this.player.setTintFill(0xffffff); // Set the player tint to white during dodge
 
-                // Dodge direction
-                if (this.cursors.left.isDown) {
-                    this.player.body.setVelocityX(-this.dodgeSpeed);
-                } else if (this.cursors.right.isDown) {
-                    this.player.body.setVelocityX(this.dodgeSpeed);
-                }
+            // Dodge direction
+            if (this.cursors.left.isDown) {
+                this.player.body.setVelocityX(-this.dodgeSpeed);
+            } else if (this.cursors.right.isDown) {
+                this.player.body.setVelocityX(this.dodgeSpeed);
+            }
 
-                if (this.cursors.up.isDown) {
-                    this.player.body.setVelocityY(-this.dodgeSpeed);
-                } else if (this.cursors.down.isDown) {
-                    this.player.body.setVelocityY(this.dodgeSpeed);
-                }
+            if (this.cursors.up.isDown) {
+                this.player.body.setVelocityY(-this.dodgeSpeed);
+            } else if (this.cursors.down.isDown) {
+                this.player.body.setVelocityY(this.dodgeSpeed);
             }
         }
+    }
 
     handlePlayerAttack() {
         this.isAttacking = true;
@@ -195,13 +212,47 @@ export class GameScene extends Phaser.Scene {
         });
     }
 
-    updateSwordPosition() {
-        if (this.isAttacking) {
-            if (this.playerFacingRight) {
-                this.sword.setPosition(this.player.x + this.player.width / 2, this.player.y);
+    // Create the enemy adding function outside the create method
+    createEnemy(type, x, y) {
+        let enemy;
+
+        switch (type) {
+            case 'orc_mini':
+                enemy = this.enemies.create(x, y, 'orc_mini', 'orc_warrior_idle_anim_f0');
+                enemy.setCollideWorldBounds(true);
+                enemy.play('orc_mini_idle');
+                // Additional setup for orc_mini
+                break;
+
+            // Add more cases for different enemy types here
+        }
+        // Common setup for all enemies (if any)
+        return enemy;
+    }
+
+    updateEnemyAI(enemy, player) {
+        const distance = Phaser.Math.Distance.Between(enemy.x, enemy.y, player.x, player.y);
+        const chaseDistance = 80; // Distance within which the enemy will start chasing the player
+        const enemySpeed = 60;
+    
+        if (distance < chaseDistance) {
+            // Chase the player
+            const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, player.x, player.y);
+            const velocityX = Math.cos(angle) * enemySpeed;
+            const velocityY = Math.sin(angle) * enemySpeed;
+            enemy.setVelocity(velocityX, velocityY);
+            enemy.play('orc_mini_run', true);
+    
+            // Flip sprite based on direction
+            if (velocityX < 0) {
+                enemy.flipX = true; // Face left
             } else {
-                this.sword.setPosition(this.player.x - this.player.width / 2, this.player.y);
+                enemy.flipX = false; // Face right
             }
+        } else {
+            // Stop chasing and play idle animation
+            enemy.setVelocity(0);
+            enemy.play('orc_mini_idle', true);
         }
     }
 }
