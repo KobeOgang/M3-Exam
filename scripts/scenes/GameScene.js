@@ -29,6 +29,10 @@ export class GameScene extends Phaser.Scene {
         this.load.animation('imp_anim', '../assets/atlas/imp/imp_anim.json');
         this.load.atlas('coin', '../assets/atlas/coin/coin.png', '../assets/atlas/coin/coin_atlas.json');
         this.load.animation('coin_anim', '../assets/atlas/coin/coin_anim.json');
+        this.load.atlas('skeleton', '../assets/atlas/skeleton/skeleton.png', '../assets/atlas/skeleton/skeleton_atlas.json');
+        this.load.animation('skeleton_anim', '../assets/atlas/skeleton/skeleton_anim.json');
+        this.load.atlas('tiny_zomb', '../assets/atlas/tiny_zomb/tiny_zomb.png', '../assets/atlas/tiny_zomb/tiny_zomb_atlas.json');
+        this.load.animation('tiny_zomb_anim', '../assets/atlas/tiny_zomb/tiny_zomb_anim.json');
         //images
         this.load.image('sword', '../assets/images/sword.png');
         this.load.image('heart_full', '../assets/images/heart_full.png');
@@ -63,11 +67,13 @@ export class GameScene extends Phaser.Scene {
         walls.setCollisionByExclusion([-1]);
 
         // Player
-        this.player = this.physics.add.sprite(400, 300, 'knight', 'knight_f_idle_anim_f0');
+        this.player = this.physics.add.sprite(650, 180, 'knight', 'knight_f_idle_anim_f0');
         this.player.setCollideWorldBounds(true);
 
         // Potions
         this.spawnRedPotion(472, 246);
+        this.spawnRedPotion(712, 216);
+        this.spawnYellowPotion(808, 216);
 
         //enemies group
         this.enemies = this.physics.add.group();
@@ -77,6 +83,16 @@ export class GameScene extends Phaser.Scene {
         this.createEnemy('imp', 215, 330);
         this.createEnemy('imp', 225, 295);
         this.createEnemy('imp', 220, 270);
+        this.createEnemy('skeleton', 823, 348);
+        this.createEnemy('skeleton', 845, 355);
+        this.createEnemy('skeleton', 823, 380);
+        this.createEnemy('tiny_zomb', 843, 320);
+        this.createEnemy('tiny_zomb', 790, 342);
+        this.createEnemy('tiny_zomb', 778, 420);
+        this.createEnemy('tiny_zomb', 770, 390);
+        this.createEnemy('tiny_zomb', 782, 381);
+        this.createEnemy('orc_mini', 680, 589);
+        this.createEnemy('imp', 704, 589);
 
         // Player animations
         this.anims.fromJSON(this.cache.json.get('knight_anim'));
@@ -142,9 +158,10 @@ export class GameScene extends Phaser.Scene {
         this.physics.add.overlap(this.sword, this.enemies, this.handleSwordHit, null, this);
 
         this.physics.world.on('worldbounds', (body) => {
-            body.gameObject.setVelocity(0); // Stop the object when it hits the world bounds
+            body.gameObject.setVelocity(0);
         });
 
+        this.lastLogTime = 0;
     }
 
     update(time, delta) {
@@ -159,6 +176,18 @@ export class GameScene extends Phaser.Scene {
         });
 
         this.checkPlayerSpikeOverlap();
+        this.logCoordinates(time);
+    }
+
+    logCoordinates(currentTime) {
+        const throttleDelay = 3000;
+
+        if (currentTime - this.lastLogTime >= throttleDelay) {
+            const x = Math.floor(this.player.x);
+            const y = Math.floor(this.player.y);
+            console.log(`Coords: (${x}, ${y})`);
+            this.lastLogTime = currentTime;
+        }
     }
 
     handlePlayerMovement(time, delta) {
@@ -309,6 +338,36 @@ export class GameScene extends Phaser.Scene {
                 enemy.damage = 10;
                 enemy.dying = false;
                 enemy.scoreValue = 100;
+                break;
+            case 'skeleton':
+                enemy = this.enemies.create(x, y, 'skeleton', 'skelet_idle_anim_f0');
+                enemy.setCollideWorldBounds(true);
+                enemy.idleAnimation = 'skeleton_idle';
+                enemy.runAnimation = 'skeleton_run';
+                enemy.chaseDistance = 90;
+                enemy.chaseSpeed = 35;
+                enemy.health = 80;
+                enemy.knockbackDistance = 20;
+                enemy.invincibilityDuration = 600;
+                enemy.lastHitTime = 0;
+                enemy.damage = 20;
+                enemy.dying = false;
+                enemy.scoreValue = 200;
+                break;
+            case 'tiny_zomb':
+                enemy = this.enemies.create(x, y, 'tiny_zomb', 'tiny_zombie_idle_anim_f0');
+                enemy.setCollideWorldBounds(true);
+                enemy.idleAnimation = 'tiny_zomb_idle';
+                enemy.runAnimation = 'tiny_zomb_run';
+                enemy.chaseDistance = 110;
+                enemy.chaseSpeed = 45;
+                enemy.health = 40;
+                enemy.knockbackDistance = 20;
+                enemy.invincibilityDuration = 600;
+                enemy.lastHitTime = 0;
+                enemy.damage = 10;
+                enemy.dying = false;
+                enemy.scoreValue = 180;
                 break;
         }
         return enemy;
@@ -543,9 +602,9 @@ export class GameScene extends Phaser.Scene {
     collectRedPotion(potion) {
         if (this.player.health < this.player.maxHealth) {
             potion.destroy();
-            this.player.health = this.player.maxHealth; // Full health
+            this.player.health = this.player.maxHealth;
             this.updateHealthUI();
-        }else{
+        } else {
             return;
         }
     }

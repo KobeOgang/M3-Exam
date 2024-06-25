@@ -1,0 +1,52 @@
+{
+    "anims": [
+        {
+            "key": "skeleton_run",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "skeleton",
+                    "frame": "skelet_run_anim_f0"
+                },
+                {
+                    "key": "skeleton",
+                    "frame": "skelet_run_anim_f1"
+                },
+                {
+                    "key": "skeleton",
+                    "frame": "skelet_run_anim_f2"
+                },
+                {
+                    "key": "skeleton",
+                    "frame": "skelet_run_anim_f3"
+                }
+            ]
+        },
+        {
+            "key": "skeleton_idle",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 10,
+            "frames": [
+                {
+                    "key": "skeleton",
+                    "frame": "skelet_idle_anim_f0"
+                },
+                {
+                    "key": "skeleton",
+                    "frame": "skelet_idle_anim_f1"
+                },
+                {
+                    "key": "skeleton",
+                    "frame": "skelet_idle_anim_f2"
+                },
+                {
+                    "key": "skeleton",
+                    "frame": "skelet_idle_anim_f3"
+                }
+            ]
+        }
+    ]
+}
