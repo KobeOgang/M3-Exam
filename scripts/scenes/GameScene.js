@@ -19,6 +19,7 @@ export class GameScene extends Phaser.Scene {
         this.load.image('tiles', '../assets/tiles/tiles.png');
         this.load.image('tiles2', '../assets/tiles/tiles2.png');
         this.load.image('tiles3', '../assets/tiles/tiles3.png');
+        this.load.image('tiles4', '../assets/tiles/tiles4.png');
         this.load.tilemapTiledJSON('map', '../assets/maps/map1.json');
         //atlas and animation
         this.load.atlas('knight', '../assets/atlas/knight/knight.png', '../assets/atlas/knight/knight_atlas.json');
@@ -55,19 +56,20 @@ export class GameScene extends Phaser.Scene {
         const tileset = map.addTilesetImage('tiles', 'tiles');
         const tileset2 = map.addTilesetImage('tiles2', 'tiles2');
         const tileset3 = map.addTilesetImage('tiles3', 'tiles3');
+        const tileset4 = map.addTilesetImage('tiles4', 'tiles4');
         const floor = map.createLayer('floor', [tileset, tileset2, tileset3], 0, 0);
         const floor2 = map.createLayer('floor2', [tileset, tileset2, tileset3], 0, 0);
         const walls2 = map.createLayer('walls2', [tileset, tileset2, tileset3], 0, 0);
         const walls = map.createLayer('walls', [tileset, tileset2, tileset3], 0, 0);
         this.spikes = map.createLayer('spikes', [tileset, tileset2, tileset3], 0, 0);
-        const objects = map.createLayer('objects', [tileset, tileset2, tileset3], 0, 0);
+        const objects = map.createLayer('objects', [tileset, tileset2, tileset3, tileset4], 0, 0);
         const win = map.createLayer('win', [tileset, tileset2, tileset3], 0, 0);
 
         // Collisions
         walls.setCollisionByExclusion([-1]);
 
         // Player
-        this.player = this.physics.add.sprite(650, 180, 'knight', 'knight_f_idle_anim_f0');
+        this.player = this.physics.add.sprite(220, 480, 'knight', 'knight_f_idle_anim_f0');
         this.player.setCollideWorldBounds(true);
 
         // Potions
@@ -97,7 +99,6 @@ export class GameScene extends Phaser.Scene {
         // Player animations
         this.anims.fromJSON(this.cache.json.get('knight_anim'));
 
-
         //Sword
         this.sword = this.physics.add.sprite(this.player.x, this.player.y, 'sword');
         this.sword.setVisible(false);
@@ -123,8 +124,6 @@ export class GameScene extends Phaser.Scene {
         this.physics.add.collider(this.player, walls);
         this.physics.add.collider(this.enemies, walls);
 
-
-
         // player properties
         this.player.maxHealth = 100;
         this.player.health = 100;
@@ -147,6 +146,13 @@ export class GameScene extends Phaser.Scene {
         // coins collected text
         this.coinsText = this.add.bitmapText(475, 230, 'font', 'Coins Collected: 0', 8);
         this.coinsText.setScrollFactor(0);
+
+        // tutorial text
+        this.tutText = this.add.bitmapText(197, 500, 'font', 'To move around', 7);
+        this.tutText2 = this.add.bitmapText(295, 276, 'font', 'To Attack', 7);
+        this.tutText3 = this.add.bitmapText(439, 325, 'font', 'To Evade', 7);
+        this.tutText4 = this.add.bitmapText(450, 255, 'font', 'Red Potions give health', 7);
+
 
         //Coins
         this.spawnCoin(100, 150);
@@ -329,7 +335,7 @@ export class GameScene extends Phaser.Scene {
                 enemy.setCollideWorldBounds(true);
                 enemy.idleAnimation = 'imp_idle';
                 enemy.runAnimation = 'imp_run';
-                enemy.chaseDistance = 145;
+                enemy.chaseDistance = 130;
                 enemy.chaseSpeed = 40;
                 enemy.health = 40;
                 enemy.knockbackDistance = 20;
