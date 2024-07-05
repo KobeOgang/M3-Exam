@@ -6,52 +6,57 @@ export class FinalWinScene extends Phaser.Scene {
     init(data) {
         this.finalScore = data.score;
         this.finalCoins = data.coins;
-        this.nextLevel = data.nextLevel; 
+        this.nextLevel = data.nextLevel;
         this.currentLevel = data.currentLevel;
     }
 
-    preload(){
-        this.load.image('win', '../assets/images/win.png');
-        this.load.image('reset', '../assets/images/reset.png');
-        this.load.image('menu', '../assets/images/menu.png');
+    preload() {
+        this.load.bitmapFont('font', '../assets/fonts/minogram_6x10.png', '../assets/fonts/minogram_6x10.xml');
     }
 
     create() {
-        this.cameras.main.setBackgroundColor('#a2d2ff');
+        this.finalWinMusic = this.sound.add('finalWinMusic', {volume: 1, loop: true});
+        this.finalWinMusic.play();
 
-        // Music
-        this.winMusic = this.sound.add('winMusic', { volume: 0.7, loop: true });
-        this.winMusic.play();
+        const storyTexts = [
+            "Emerging from the dungeon's depth",
+            "With treasures gained and bated breath",
+            "The riches now in your possession",
+            "Mark the end of your grim repression",
+            "No more shadows, no more strife",
+            "You've reclaimed your worthy life",
+            "With gold and gems, a fortune vast",
+            "Return to the surface, free at last",
+        ];
 
-        // Win text
-        const winText = this.add.image(this.sys.game.config.width / 2, 130, 'win'); 
+        let currentTextIndex = 0;
+        const textObject = this.add.bitmapText(this.cameras.main.centerX, this.cameras.main.centerY, 'font', '', 30)
+            .setOrigin(0.5)
+            .setAlpha(0);
 
-        // Score
-        this.add.bitmapText(this.sys.game.config.width / 2, 240, 'font', 'Score: ' + this.finalScore, 25).setOrigin(0.5, 0.5);
+        const showNextText = () => {
+            if (currentTextIndex >= storyTexts.length) {
+                this.cameras.main.fadeOut(3000, 0, 0, 0);
+                this.cameras.main.once('camerafadeoutcomplete', () => {
+                    this.scene.start('GameScene5');
+                });
+                return;
+            }
 
-        // Coins collected
-        this.add.bitmapText(this.sys.game.config.width / 2, 270, 'font', 'Coins Collected: ' + this.finalCoins 
-        + ' / 14', 25).setOrigin(0.5, 0.5);
+            textObject.setText(storyTexts[currentTextIndex]);
+            currentTextIndex++;
 
-        // Yessir
-        this.add.bitmapText(this.sys.game.config.width / 2, 380, 'font', '"Not today water! Not today."', 20).setOrigin(0.5, 0.5);
+            this.tweens.add({
+                targets: textObject,
+                alpha: 1,
+                duration: 1000,
+                ease: 'Power1',
+                yoyo: true,
+                hold: 3000,
+                onComplete: showNextText
+            });
+        };
 
-        // Retry button
-        const retryButton = this.add.image(this.sys.game.config.width / 2 + 50, this.sys.game.config.height / 2 + 140, 'reset');
-        retryButton.setScale(0.5);
-        retryButton.setInteractive();
-        retryButton.on('pointerup', () => {
-            this.winMusic.stop();
-            this.scene.start('GameBootScene', { nextLevel: this.currentLevel });
-        });
-
-        // Main Menu button
-        const menuButton = this.add.image(this.sys.game.config.width / 2 - 50, this.sys.game.config.height / 2 + 140, 'menu');
-        menuButton.setScale(0.5);
-        menuButton.setInteractive();
-        menuButton.on('pointerup', () => {
-            this.winMusic.stop();
-            this.scene.start('MainMenuScene');
-        });
+        showNextText();
     }
 }

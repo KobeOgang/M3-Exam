@@ -1,0 +1,52 @@
+{
+    "anims": [
+        {
+            "key": "goblin_run",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "goblin",
+                    "frame": "goblin_run_anim_f0"
+                },
+                {
+                    "key": "goblin",
+                    "frame": "goblin_run_anim_f1"
+                },
+                {
+                    "key": "goblin",
+                    "frame": "goblin_run_anim_f2"
+                },
+                {
+                    "key": "goblin",
+                    "frame": "goblin_run_anim_f3"
+                }
+            ]
+        },
+        {
+            "key": "goblin_idle",
+            "type": "frames",
+            "repeat": -1,
+            "frameRate": 12,
+            "frames": [
+                {
+                    "key": "goblin",
+                    "frame": "goblin_idle_anim_f0"
+                },
+                {
+                    "key": "goblin",
+                    "frame": "goblin_idle_anim_f1"
+                },
+                {
+                    "key": "goblin",
+                    "frame": "goblin_idle_anim_f2"
+                },
+                {
+                    "key": "goblin",
+                    "frame": "goblin_idle_anim_f3"
+                }
+            ]
+        }
+    ]
+}

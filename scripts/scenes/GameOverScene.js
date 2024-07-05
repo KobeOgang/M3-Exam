@@ -10,47 +10,76 @@ export class GameOverScene extends Phaser.Scene {
     }
 
     preload(){
+        this.load.image('background', '../assets/images/background.png');
         this.load.image('gameOver', '../assets/images/gameOver.png');
-        this.load.image('reset', '../assets/images/reset.png');
-        this.load.image('menu', '../assets/images/menu.png');
+        this.load.image('again', '../assets/images/restart.png');
+        this.load.image('leave', '../assets/images/leave.png');
+        this.load.bitmapFont('font', '../assets/fonts/minogram_6x10.png', '../assets/fonts/minogram_6x10.xml');
+        this.load.audio('winMusic', '../assets/audio/BGM/winMusic.mp3');
     }
 
     create() {
-        this.cameras.main.setBackgroundColor('#a2d2ff');
+        this.cameras.main.fadeIn(3000, 0, 0, 0);
 
-        // Music
-        this.gameOver = this.sound.add('gameOver', { volume: 1 });
+        //Music
+        this.gameOver = this.sound.add('winMusic', { volume: 1.2, loop: true });
         this.gameOver.play();
+
 
         // Game Over text
         const gameOverText = this.add.image(this.sys.game.config.width / 2, 130, 'gameOver');
         gameOverText.setScale(1.5); 
 
         // Score
-        this.add.bitmapText(this.sys.game.config.width / 2, 240, 'font', 'Score: ' + this.finalScore, 25).setOrigin(0.5, 0.5);
+        const scoreText = this.add.bitmapText(this.sys.game.config.width / 2, 240, 'font', 'Score: ' + this.finalScore, 25).setOrigin(0.5, 0.5).setAlpha(0);
 
         // Coins collected
-        this.add.bitmapText(this.sys.game.config.width / 2, 270, 'font', 'Coins Collected: ' + this.finalCoins + ' / 14', 25).setOrigin(0.5, 0.5);
-
-        // Tip
-        this.add.bitmapText(this.sys.game.config.width / 2, 380, 'font', "Tip: Its not everybody's allergy, but spikes still hurt.", 20).setOrigin(0.5, 0.5);
+        const coinsText = this.add.bitmapText(this.sys.game.config.width / 2, 270, 'font', 'Coins Collected: ' + this.finalCoins, 25).setOrigin(0.5, 0.5).setAlpha(0);
 
         // Retry button
-        const retryButton = this.add.image(this.sys.game.config.width / 2 + 50, this.sys.game.config.height / 2 + 140, 'reset');
-        retryButton.setScale(0.5);
+        const retryButton = this.add.image(this.sys.game.config.width / 2, this.sys.game.config.height / 2 + 140, 'again').setAlpha(0);
+        retryButton.setScale(4);
         retryButton.setInteractive();
         retryButton.on('pointerup', () => {  
             this.gameOver.stop();
             this.scene.start('GameBootScene', { nextLevel: this.currentLevel });
         });
-
+        
         // Main Menu button
-        const menuButton = this.add.image(this.sys.game.config.width / 2 - 50, this.sys.game.config.height / 2 + 140, 'menu');
-        menuButton.setScale(0.5);
+        const menuButton = this.add.image(this.sys.game.config.width / 2, this.sys.game.config.height / 2 + 210, 'leave').setAlpha(0);
+        menuButton.setScale(4);
         menuButton.setInteractive();
         menuButton.on('pointerup', () => {
             this.gameOver.stop();
             this.scene.start('MainMenuScene');
+        });
+
+        this.tweens.add({
+            targets: scoreText,
+            alpha: 1,
+            duration: 1000,
+            delay: 1000
+        });
+
+        this.tweens.add({
+            targets: coinsText,
+            alpha: 1,
+            duration: 1000,
+            delay: 2000
+        });
+
+        this.tweens.add({
+            targets: retryButton,
+            alpha: 1,
+            duration: 1000,
+            delay: 3000
+        });
+
+        this.tweens.add({
+            targets: menuButton,
+            alpha: 1,
+            duration: 1000,
+            delay: 4000
         });
     }
 }

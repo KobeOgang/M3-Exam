@@ -21,32 +21,35 @@ export class GameScene extends Phaser.Scene {
         this.load.image('tiles3', '../assets/tiles/tiles3.png');
         this.load.image('tiles4', '../assets/tiles/tiles4.png');
         this.load.tilemapTiledJSON('map', '../assets/maps/map1.json');
-        //atlas and animation
-        this.load.atlas('knight', '../assets/atlas/knight/knight.png', '../assets/atlas/knight/knight_atlas.json');
-        this.load.animation('knight_anim', '../assets/atlas/knight/knight_anim.json');
-        this.load.atlas('orc_mini', '../assets/atlas/orc_mini/orc_mini.png', '../assets/atlas/orc_mini/orc_mini_atlas.json');
-        this.load.animation('orc_mini_anim', '../assets/atlas/orc_mini/orc_mini_anim.json');
-        this.load.atlas('imp', '../assets/atlas/imp/imp.png', '../assets/atlas/imp/imp_atlas.json');
-        this.load.animation('imp_anim', '../assets/atlas/imp/imp_anim.json');
-        this.load.atlas('coin', '../assets/atlas/coin/coin.png', '../assets/atlas/coin/coin_atlas.json');
-        this.load.animation('coin_anim', '../assets/atlas/coin/coin_anim.json');
-        this.load.atlas('skeleton', '../assets/atlas/skeleton/skeleton.png', '../assets/atlas/skeleton/skeleton_atlas.json');
-        this.load.animation('skeleton_anim', '../assets/atlas/skeleton/skeleton_anim.json');
-        this.load.atlas('tiny_zomb', '../assets/atlas/tiny_zomb/tiny_zomb.png', '../assets/atlas/tiny_zomb/tiny_zomb_atlas.json');
-        this.load.animation('tiny_zomb_anim', '../assets/atlas/tiny_zomb/tiny_zomb_anim.json');
-        //images
-        this.load.image('sword', '../assets/images/sword.png');
-        this.load.image('heart_full', '../assets/images/heart_full.png');
-        this.load.image('heart_half', '../assets/images/heart_half.png');
-        this.load.image('heart_empty', '../assets/images/heart_empty.png');
-        this.load.image('potion_red', '../assets/images/potion_red.png');
-        this.load.image('potion_blue', '../assets/images/potion_blue.png');
-        this.load.image('potion_yellow', '../assets/images/potion_yellow.png');
-        //font
-        this.load.bitmapFont('font', '../assets/fonts/minogram_6x10.png', '../assets/fonts/minogram_6x10.xml');
     }
 
     create() {
+        this.cameras.main.setBackgroundColor('#000000');
+        this.doorClose = this.sound.add('doorClose', { volume: 1.2 });
+        this.doorClose.play();
+        this.cameras.main.fadeIn(3000, 0, 0, 0);
+        this.cameras.main.setBackgroundColor('#222222');
+
+        this.gameMusic = this.sound.add('gameMusic', { volume: 0.5, loop: true });
+        this.gameMusic.play();
+
+        //SFX
+        this.coinSounds = [
+            this.sound.add('coin1', { volume: 1 }),
+            this.sound.add('coin2', { volume: 1 }),
+            this.sound.add('coin3', { volume: 1 }),
+            this.sound.add('coin4', { volume: 1 })
+        ];
+
+        this.swordSounds = [
+            this.sound.add('playerAttack', { volume: 1.5 }),
+            this.sound.add('playerAttack2', { volume: 1.5 }),
+            this.sound.add('playerAttack3', { volume: 1.5 })
+        ];
+
+        this.potionDrink = this.sound.add('potionDrink', { volume: 2 });
+        this.hurt = this.sound.add('playerHurt', { volume: 1.5 });
+
         // for counters
         this.score = 0;
         this.coinsCollected = 0;
@@ -67,15 +70,21 @@ export class GameScene extends Phaser.Scene {
 
         // Collisions
         walls.setCollisionByExclusion([-1]);
+        win.setCollisionByExclusion([-1]);
 
         // Player
         this.player = this.physics.add.sprite(220, 480, 'knight', 'knight_f_idle_anim_f0');
         this.player.setCollideWorldBounds(true);
+        this.player.setDepth(2);
 
         // Potions
         this.spawnRedPotion(472, 246);
         this.spawnRedPotion(712, 216);
         this.spawnYellowPotion(808, 216);
+
+        //Coins
+        this.spawnCoin(368, 104);
+        this.spawnCoin(448, 104);
 
         //enemies group
         this.enemies = this.physics.add.group();
@@ -116,6 +125,7 @@ export class GameScene extends Phaser.Scene {
         this.cursors = this.input.keyboard.createCursorKeys();
         this.spaceBar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         this.shiftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+        this.pauseKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
 
         // facing direction flag
         this.playerFacingRight = true;
@@ -123,13 +133,16 @@ export class GameScene extends Phaser.Scene {
         // Colliders
         this.physics.add.collider(this.player, walls);
         this.physics.add.collider(this.enemies, walls);
+        this.physics.add.collider(this.player, win, this.playerWin, null, this);
 
         // player properties
         this.player.maxHealth = 100;
         this.player.health = 100;
-        this.player.invincibilityDuration = 1600;
+        this.player.invincibilityDuration = 1100;
         this.player.lastHitTime = 0;
         this.player.knockback = 20;
+        this.player.isDead = false;
+        this.playerHasWon = false;
 
         // Create health UI
         this.healthUI = [];
@@ -148,15 +161,12 @@ export class GameScene extends Phaser.Scene {
         this.coinsText.setScrollFactor(0);
 
         // tutorial text
-        this.tutText = this.add.bitmapText(197, 500, 'font', 'To move around', 7);
-        this.tutText2 = this.add.bitmapText(295, 276, 'font', 'To Attack', 7);
-        this.tutText3 = this.add.bitmapText(439, 325, 'font', 'To Evade', 7);
-        this.tutText4 = this.add.bitmapText(450, 255, 'font', 'Red Potions give health', 7);
-
-
-        //Coins
-        this.spawnCoin(100, 150);
-
+        this.tutText = this.add.bitmapText(197, 500, 'font2', 'To Move Around', 10);
+        this.tutText2 = this.add.bitmapText(295, 276, 'font2', 'To Attack', 10);
+        this.tutText3 = this.add.bitmapText(439, 325, 'font2', 'To Evade', 10);
+        this.tutText4 = this.add.bitmapText(440, 255, 'font2', 'Red Potions give health', 10);
+        this.tutText5 = this.add.bitmapText(320, 140, 'font', 'Evading Makes You Immune to All Damage', 8);
+        this.tutText6 = this.add.bitmapText(753, 227, 'font2', 'Yellow Potions give Attack Boost', 10);
 
         // Events
         //this.physics.add.overlap(this.player, spikes, this.handlePlayerSpikesOverlap, null, this);
@@ -168,6 +178,24 @@ export class GameScene extends Phaser.Scene {
         });
 
         this.lastLogTime = 0;
+        this.isPaused = false;
+
+        //pause overlay
+        this.pauseOverlay = this.add.rectangle(this.cameras.main.width / 2, this.cameras.main.height / 2,
+            this.cameras.main.width, this.cameras.main.height, 0x000000, 0.5);
+        this.pauseOverlay.setScrollFactor(0);
+        this.pauseOverlay.setDepth(10);
+        this.pauseOverlay.setVisible(false);
+
+        this.pauseText = this.add.bitmapText(this.cameras.main.width / 2, this.cameras.main.height / 2,
+            'font', 'Paused', 12);
+        this.pauseText.setOrigin(0.5);
+        this.pauseText.setScrollFactor(0);
+        this.pauseText.setDepth(11);
+        this.pauseText.setVisible(false);
+
+        // Event pause key
+        this.pauseKey.on('down', this.togglePause, this);
     }
 
     update(time, delta) {
@@ -183,6 +211,20 @@ export class GameScene extends Phaser.Scene {
 
         this.checkPlayerSpikeOverlap();
         this.logCoordinates(time);
+    }
+
+    togglePause() {
+        if (this.isPaused) {
+            this.scene.resume();
+            this.pauseOverlay.setVisible(false);
+            this.pauseText.setVisible(false);
+            this.isPaused = false;
+        } else {
+            this.scene.pause();
+            this.pauseOverlay.setVisible(true);
+            this.pauseText.setVisible(true);
+            this.isPaused = true;
+        }
     }
 
     logCoordinates(currentTime) {
@@ -243,6 +285,8 @@ export class GameScene extends Phaser.Scene {
 
     handlePlayerDodge(time) {
         if (time > this.lastDodgeTime + this.dodgeCooldown) {
+            this.dash = this.sound.add('dash');
+            this.dash.play();
             this.isDodging = true;
             this.player.isInvincible = true;
             this.dodgeTime = this.dodgeDuration;
@@ -269,6 +313,9 @@ export class GameScene extends Phaser.Scene {
         this.isAttacking = true;
         this.player.body.setVelocity(0);
         this.sword.setVisible(true);
+
+        var randomSound = Phaser.Math.RND.pick(this.swordSounds);
+        randomSound.play();
 
         let swordX = this.player.x;
         let swordY = this.player.y;
@@ -329,6 +376,8 @@ export class GameScene extends Phaser.Scene {
                 enemy.damage = 20;
                 enemy.dying = false;
                 enemy.scoreValue = 150;
+                enemy.hurtSFX = this.sound.add('orcHit', { volume: 1.7 });
+                enemy.deathSFX = this.sound.add('orcDeath', { volume: 1.7 });
                 break;
             case 'imp':
                 enemy = this.enemies.create(x, y, 'imp', 'imp_idle_anim_f0');
@@ -344,6 +393,8 @@ export class GameScene extends Phaser.Scene {
                 enemy.damage = 10;
                 enemy.dying = false;
                 enemy.scoreValue = 100;
+                enemy.hurtSFX = this.sound.add('impHit', { volume: 1.7 });
+                enemy.deathSFX = this.sound.add('impDeath', { volume: 1.7 });
                 break;
             case 'skeleton':
                 enemy = this.enemies.create(x, y, 'skeleton', 'skelet_idle_anim_f0');
@@ -359,6 +410,8 @@ export class GameScene extends Phaser.Scene {
                 enemy.damage = 20;
                 enemy.dying = false;
                 enemy.scoreValue = 200;
+                enemy.hurtSFX = this.sound.add('skeletonHit', { volume: 1.7 });
+                enemy.deathSFX = this.sound.add('skeletonDeath', { volume: 1.7 });
                 break;
             case 'tiny_zomb':
                 enemy = this.enemies.create(x, y, 'tiny_zomb', 'tiny_zombie_idle_anim_f0');
@@ -374,6 +427,8 @@ export class GameScene extends Phaser.Scene {
                 enemy.damage = 10;
                 enemy.dying = false;
                 enemy.scoreValue = 180;
+                enemy.hurtSFX = this.sound.add('zombHit', { volume: 1.7 });
+                enemy.deathSFX = this.sound.add('zombDeath', { volume: 1.7 });
                 break;
         }
         return enemy;
@@ -414,6 +469,7 @@ export class GameScene extends Phaser.Scene {
                 enemy.dying = true;
                 enemy.body.moves = false;
                 enemy.body.setVelocity(0, 0);
+                enemy.deathSFX.play();
 
                 this.score += enemy.scoreValue;
                 this.scoreText.setText('Score: ' + this.score);
@@ -429,7 +485,8 @@ export class GameScene extends Phaser.Scene {
                 });
             } else {
                 enemy.body.moves = false;
-                enemy.setCollideWorldBounds(false);  // Disable wall collision temporarily
+                enemy.setCollideWorldBounds(false);
+                enemy.hurtSFX.play();
 
                 const angle = Phaser.Math.Angle.Between(sword.x, sword.y, enemy.x, enemy.y);
                 const knockbackX = Math.cos(angle) * enemy.knockbackDistance;
@@ -443,7 +500,7 @@ export class GameScene extends Phaser.Scene {
                     duration: 200,
                     onComplete: () => {
                         enemy.body.moves = true;
-                        enemy.setCollideWorldBounds(true);  // Re-enable wall collision
+                        enemy.setCollideWorldBounds(true);
                     }
                 });
 
@@ -479,26 +536,42 @@ export class GameScene extends Phaser.Scene {
         if (enemy.dying) {
             return;
         }
+        if (this.player.isDead) {
+            return;
+        }
         player.health -= enemy.damage;
         player.lastHitTime = currentTime;
         this.updateHealthUI();
 
         if (player.health <= 0) {
+            this.player.isDead = true;
             player.body.moves = false;
             player.body.setVelocity(0, 0);
+            this.death = this.sound.add('playerDeath', { volume: 1.3 });
+            this.death.play();
+
+            const screenOverlay = this.add.rectangle(this.cameras.main.width / 2, this.cameras.main.height / 2,
+                this.cameras.main.width + 700, this.cameras.main.height + 700, 0x000000);
+            screenOverlay.setDepth(4);
+            screenOverlay.setAlpha(0);
 
             this.tweens.add({
-                targets: player,
-                alpha: 0,
-                duration: 500,
+                targets: screenOverlay,
+                alpha: 1,
+                duration: 2000,
                 ease: 'Power1',
                 onComplete: () => {
-                    player.destroy();
+                    this.death.stop();
+                    this.gameMusic.stop();
+                    this.scene.start('GameOverScene', { score: this.score, coins: this.coinsCollected, currentLevel: 'GameScene' });
                 }
             });
         } else {
             player.body.moves = false;
-            player.setCollideWorldBounds(false);  // Disable wall collision temporarily
+            player.setCollideWorldBounds(false);
+            this.hurt.play();
+            this.armorHit = this.sound.add('armorHit', { volume: 1 });
+            this.armorHit.play();
 
             const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, player.x, player.y);
             const knockbackX = Math.cos(angle) * this.player.knockback;
@@ -512,7 +585,7 @@ export class GameScene extends Phaser.Scene {
                 duration: 100,
                 onComplete: () => {
                     player.body.moves = true;
-                    player.setCollideWorldBounds(true);  // Re-enable wall collision
+                    player.setCollideWorldBounds(true);
                 }
             });
 
@@ -537,30 +610,45 @@ export class GameScene extends Phaser.Scene {
         if (player.isInvincible || currentTime <= player.lastHitTime + player.invincibilityDuration) {
             return;
         }
+        if (this.player.isDead) {
+            return;
+        }
         player.health -= 10;
         player.lastHitTime = currentTime;
         this.updateHealthUI();
 
         if (player.health <= 0) {
+            this.player.isDead = true;
             player.body.moves = false;
             player.body.setVelocity(0, 0);
+            this.death = this.sound.add('playerDeath', { volume: 1.3 });
+            this.death.play();
+
+            const screenOverlay = this.add.rectangle(this.cameras.main.width / 2, this.cameras.main.height / 2,
+                this.cameras.main.width + 700, this.cameras.main.height + 700, 0x000000);
+            screenOverlay.setDepth(4);
+            screenOverlay.setAlpha(0);
 
             this.tweens.add({
-                targets: player,
-                alpha: 0,
-                duration: 500,
+                targets: screenOverlay,
+                alpha: 1,
+                duration: 2000,
                 ease: 'Power1',
                 onComplete: () => {
-                    player.destroy();
+                    this.death.stop();
+                    this.gameMusic.stop();
+                    this.scene.start('GameOverScene', { score: this.score, coins: this.coinsCollected, currentLevel: 'GameScene' });
                 }
             });
         } else {
             player.body.moves = false;
-            player.setCollideWorldBounds(false);  // Disable wall collision temporarily
+            player.setCollideWorldBounds(false);
+
+            this.hurt.play();
 
             const angle = Phaser.Math.Angle.Between(spike.pixelX, spike.pixelY, player.x, player.y);
-            const knockbackX = Math.cos(angle) * 20;
-            const knockbackY = Math.sin(angle) * 20;
+            const knockbackX = Math.cos(angle) * 5;
+            const knockbackY = Math.sin(angle) * 5;
 
             this.tweens.add({
                 targets: player,
@@ -570,7 +658,7 @@ export class GameScene extends Phaser.Scene {
                 duration: 200,
                 onComplete: () => {
                     player.body.moves = true;
-                    player.setCollideWorldBounds(true);  // Re-enable wall collision
+                    player.setCollideWorldBounds(true);
                 }
             });
 
@@ -591,6 +679,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     collectCoin(player, coin) {
+        var randomCoinSound = Phaser.Math.RND.pick(this.coinSounds);
+        randomCoinSound.play();
         coin.destroy();
         this.score += 100;
         this.coinsCollected += 1;
@@ -607,6 +697,9 @@ export class GameScene extends Phaser.Scene {
 
     collectRedPotion(potion) {
         if (this.player.health < this.player.maxHealth) {
+            this.heal = this.sound.add('heal');
+            this.heal.play();
+            this.potionDrink.play();
             potion.destroy();
             this.player.health = this.player.maxHealth;
             this.updateHealthUI();
@@ -623,6 +716,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     collectBluePotion(potion) {
+        this.spdBoost = this.sound.add('spdBoost');
+        this.spdBoost.play();
+        this.potionDrink.play();
         potion.destroy();
         this.playerSpeed = 130;
         this.time.delayedCall(this.speedBoostDuration, () => {
@@ -638,10 +734,39 @@ export class GameScene extends Phaser.Scene {
     }
 
     collectYellowPotion(potion) {
+        this.atkBoost = this.sound.add('atkBoost');
+        this.atkBoost.play();
+        this.potionDrink.play();
         potion.destroy();
         this.player.attackPower = (this.player.attackPower || 20) * 3;
         this.time.delayedCall(this.damageBoostDuration, () => {
             this.player.attackPower /= 2;
+        });
+    }
+
+    playerWin(player, tile) {
+        //this.gameMusic.stop();
+        if (this.playerHasWon) {
+            return;
+        }
+
+        this.playerHasWon = true;
+        this.exit = this.sound.add('exit', { volume: 1.2 });
+        this.exit.play();
+        const screenOverlay = this.add.rectangle(this.cameras.main.width / 2, this.cameras.main.height / 2,
+            this.cameras.main.width + 700, this.cameras.main.height + 700, 0x000000);
+        screenOverlay.setDepth(4);
+        screenOverlay.setAlpha(0);
+
+        this.tweens.add({
+            targets: screenOverlay,
+            alpha: 1,
+            duration: 2000,
+            ease: 'Power1',
+            onComplete: () => {
+                this.gameMusic.stop();
+                this.scene.start('WinScene', { score: this.score, coins: this.coinsCollected, nextLevel: 'GameScene2', currentLevel: 'GameScene' });
+            }
         });
     }
 
